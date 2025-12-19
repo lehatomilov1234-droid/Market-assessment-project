@@ -42,5 +42,10 @@ git clone https://github.com/lehatomilov1234-droid/Market-assessment-project.git
 Создайте Pull Request (PR) к ветке main с подробным описанием изменений.
 
 # 6. Информация об авторских правах и лицензировании
-Авторы: Хоч Михаил, Томилов Алексей. Группа: 24-ВТм. КГТУ "ИЦТ".
+Авторы: 
+
+<a href="https://github.com/lehatomilov1234-droid"><img src="https://avatars.githubusercontent.com/u/245590161?v=4" title="goingdust" width="50" height="50"></a> Томилов Алексей
+Хоч Михаил 
+
+Группа: 24-ВТм. КГТУ "ИЦТ".
 Все права защищены!
