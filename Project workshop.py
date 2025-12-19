@@ -204,12 +204,33 @@ class App(QMainWindow):
         elif ptype == "Scatter Plot (Корреляция)":
             d2 = self.proc.working_df[RU_TO_EN.get(col2, col2)]
             r = d1.corr(d2)
+
+            # Определение силы связи (Шкала Чеддока)
+            abs_r = abs(r)
+            if abs_r < 0.1:
+                strength = "практически отсутствует"
+            elif abs_r < 0.3:
+                strength = "слабая"
+            elif abs_r < 0.5:
+                strength = "умеренная"
+            elif abs_r < 0.7:
+                strength = "заметная"
+            elif abs_r < 0.9:
+                strength = "высокая"
+            else:
+                strength = "очень сильная"
+
+            # Вывод в лог (только коэффициент и сила)
+            self.log_box.append(f"\n🔗 КОРРЕЛЯЦИЯ ПИРСОНА:")
+            self.log_box.append(f" • Коэффициент r: {r:.4f}")
+            self.log_box.append(f" • Сила связи: {strength}")
+
+            # Отрисовка графика рассеяния
             self.ax.scatter(d1, d2, alpha=0.6, color='orange', edgecolors='white')
-            self.ax.set_title(f"Связь показателей (R = {r:.4f})")
+            self.ax.set_title(f"Корреляция: r = {r:.2f}")
             self.ax.set_xlabel(col1)
             self.ax.set_ylabel(col2)
             self.ax.grid(True, linestyle=':', alpha=0.4)
-            self.log_box.append(f"\n🔗 Корреляция Пирсона: {r:.4f}")
 
         self.canvas.draw()
 
