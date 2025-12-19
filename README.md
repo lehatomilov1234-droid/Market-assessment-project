@@ -44,8 +44,8 @@ git clone https://github.com/lehatomilov1234-droid/Market-assessment-project.git
 # 6. Информация об авторских правах и лицензировании
 Авторы: 
 
-<a href="https://github.com/lehatomilov1234-droid"><img src="https://avatars.githubusercontent.com/u/245590161?v=4" title="goingdust" width="50" height="50"></a> Томилов Алексей
-Хоч Михаил 
+<a href="https://github.com/lehatomilov1234-droid"><img src="https://avatars.githubusercontent.com/u/245590161?v=4" title="Leha" width="50" height="50"></a>
+<a href="https://github.com/InvokerDarkOverlord"><img src="https://avatars.githubusercontent.com/u/122711429?s=64&v=4" title="Misha" width="50" height="50"></a>
 
 Группа: 24-ВТм. КГТУ "ИЦТ".
 Все права защищены!
