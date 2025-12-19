@@ -2,6 +2,7 @@ import sys
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib.dates as mdates
 from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg as FigureCanvas
 from PyQt6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout,
                              QHBoxLayout, QPushButton, QTextEdit, QComboBox,
@@ -35,11 +36,13 @@ class EveProcessor:
     def load(self, path):
         try:
             self.df = pd.read_csv(path)
+            # Поиск даты
             for col in self.df.columns:
                 if any(x in col.lower() for x in ['date', 'time']):
                     self.df[col] = pd.to_datetime(self.df[col], errors='coerce')
                     self.date_col = col
                     break
+            # Поиск категорий
             self.cat_col = None
             for col in self.df.select_dtypes(include=['object']).columns:
                 if self.df[col].nunique() < 100:
@@ -56,7 +59,10 @@ class EveProcessor:
         if len(data) > 10:
             z = np.abs(stats.zscore(data[nums]))
             data = data[(z < z_thresh).all(axis=1)]
-        self.working_df = data.sort_values(self.date_col) if self.date_col else data
+
+        if self.date_col:
+            data = data.sort_values(self.date_col)
+        self.working_df = data
         return len(self.working_df)
 
     def get_stats(self, col_ru):
@@ -75,21 +81,20 @@ class App(QMainWindow):
     def __init__(self):
         super().__init__()
         self.proc = EveProcessor()
-        self.setWindowTitle("EVE Online: Универсальный комплекс прогнозирования")
+        self.setWindowTitle("EVE Online: Прогнозная система")
         self.resize(1300, 900)
 
         widget = QWidget()
         self.setCentralWidget(widget)
         layout = QHBoxLayout(widget)
 
-        # ПАНЕЛЬ УПРАВЛЕНИЯ
         tools = QVBoxLayout()
         self.btn_load = QPushButton("📁 1. Загрузить данные")
         self.btn_load.clicked.connect(self.on_load)
 
         self.cb_cat = QComboBox()
-        self.cb_col1 = QComboBox()  # Основная колонка
-        self.cb_col2 = QComboBox()  # Вторая колонка для корреляции
+        self.cb_col1 = QComboBox()
+        self.cb_col2 = QComboBox()
 
         self.cb_plot = QComboBox()
         self.cb_plot.addItems(
@@ -155,7 +160,6 @@ class App(QMainWindow):
         count = self.proc.clean(self.cb_cat.currentText(), self.z_sp.value())
         self.log_box.append(f"\n✅ Очистка: доступно {count} строк.")
 
-        # Вывод статистики для первой колонки
         s = self.proc.get_stats(col1)
         self.log_box.append(f"📈 Статистика ({col1}):")
         for k, v in s.items(): self.log_box.append(f" • {k}: {v:.4f}" if isinstance(v, float) else f" • {k}: {v}")
@@ -164,102 +168,104 @@ class App(QMainWindow):
         ptype = self.cb_plot.currentText()
         d1 = self.proc.working_df[RU_TO_EN.get(col1, col1)]
 
-        # --- ГИСТОГРАММА + ПЛОТНОСТЬ ---
         if ptype == "Гистограмма + Плотность":
-            # Рисуем гистограмму
-            self.ax.hist(d1, bins=25, alpha=0.5, color='lime', density=True, label='Распределение (Гистограмма)')
-
-            # Рисуем линию плотности
-            kde = stats.gaussian_kde(d1)
+            self.ax.hist(d1, bins=25, alpha=0.5, color='lime', density=True)
+            kde = stats.gaussian_kde(d1);
             x = np.linspace(d1.min(), d1.max(), 100)
-            self.ax.plot(x, kde(x), color='white', linewidth=2, label='Кривая плотности (KDE)')
+            self.ax.plot(x, kde(x), color='white', linewidth=2)
+            self.ax.set_title(f"Распределение: {col1}")
+            self.ax.set_ylabel("Плотность")
+            self.ax.set_xlabel("Значение")
 
-            # Добавляем информативные надписи (ОБНОВЛЕНО)
-            self.ax.set_title(f"Анализ распределения: {col1}", fontsize=12, pad=15)
-            self.ax.set_xlabel(f"Значение показателя ({col1})", fontsize=10)
-            self.ax.set_ylabel("Плотность вероятности", fontsize=10)
-            self.ax.grid(True, linestyle='--', alpha=0.3)  # Сетка для удобства
-            self.ax.legend()
-
-        # --- BOX PLOT IQR ---
         elif ptype == "Box Plot (IQR)":
-            self.ax.boxplot(d1, vert=False, patch_artist=True, boxprops=dict(facecolor='cyan', alpha=0.6))
-            self.ax.set_title(f"Диаграмма размаха (Медиана/IQR): {col1}")
-            self.ax.set_xlabel("Значение")
-            self.ax.set_yticks([])  # Убираем лишние деления по Y
+            self.ax.boxplot(d1, vert=False, patch_artist=True, boxprops=dict(facecolor='cyan'))
+            self.ax.set_title(f"Box Plot (Медиана): {col1}")
 
-        # --- BOX PLOT MEAN/SD ---
-        elif ptype == "Box Plot (Среднее/СКО)":
-            m, sd = s["Среднее"], s["СКО"]
-            self.ax.barh(1, 2 * sd, left=m - sd, height=0.3, color='magenta', alpha=0.4,
-                         label='Граница ±1 СКО (68% данных)')
-            self.ax.vlines(m, 0.7, 1.3, colors='yellow', linewidth=3, label=f'Среднее: {m:.2f}')
-            self.ax.hlines(1, d1.min(), d1.max(), colors='white', alpha=0.5, label='Минимум/Максимум')
-            self.ax.set_title(f"Разброс данных (Среднее и СКО): {col1}")
-            self.ax.set_xlabel("Значение")
-            self.ax.set_yticks([])
-            self.ax.legend()
-
-        # --- SCATTER PLOT ---
         elif ptype == "Scatter Plot (Корреляция)":
             d2 = self.proc.working_df[RU_TO_EN.get(col2, col2)]
             r = d1.corr(d2)
-
-            # Определение силы связи (Шкала Чеддока)
-            abs_r = abs(r)
-            if abs_r < 0.1:
-                strength = "практически отсутствует"
-            elif abs_r < 0.3:
-                strength = "слабая"
-            elif abs_r < 0.5:
-                strength = "умеренная"
-            elif abs_r < 0.7:
-                strength = "заметная"
-            elif abs_r < 0.9:
-                strength = "высокая"
-            else:
-                strength = "очень сильная"
-
-            # Вывод в лог (только коэффициент и сила)
-            self.log_box.append(f"\n🔗 КОРРЕЛЯЦИЯ ПИРСОНА:")
-            self.log_box.append(f" • Коэффициент r: {r:.4f}")
-            self.log_box.append(f" • Сила связи: {strength}")
-
-            # Отрисовка графика рассеяния
-            self.ax.scatter(d1, d2, alpha=0.6, color='orange', edgecolors='white')
-            self.ax.set_title(f"Корреляция: r = {r:.2f}")
-            self.ax.set_xlabel(col1)
+            self.ax.scatter(d1, d2, alpha=0.6, color='orange')
+            self.ax.set_xlabel(col1);
             self.ax.set_ylabel(col2)
-            self.ax.grid(True, linestyle=':', alpha=0.4)
+            self.log_box.append(
+                f"\n🔗 Корреляция: {r:.4f} ({'сильная' if abs(r) > 0.7 else 'умеренная' if abs(r) > 0.3 else 'слабая'})")
 
         self.canvas.draw()
 
     def on_pred(self):
-        col = RU_TO_EN.get(self.cb_col1.currentText(), self.cb_col1.currentText())
-        n = self.steps.value()
-        y = self.proc.working_df[col].values
-        X = np.arange(len(y)).reshape(-1, 1)
-        xf = np.arange(len(y), len(y) + n).reshape(-1, 1)
+        try:
+            col_name = self.cb_col1.currentText()
+            col_eng = RU_TO_EN.get(col_name, col_name)
+            n = self.steps.value()
 
-        self.log_box.append("\n🚀 Сравнение моделей:")
-        self.ax.clear()
-        self.ax.plot(y, label="Факт", color='white', alpha=0.4)
+            df_work = self.proc.working_df
+            if df_work is None or len(df_work) < 2:
+                self.log_box.append("⚠️ Недостаточно данных для прогноза.")
+                return
 
-        models = [
-            ("Линейная", LinearRegression(), 'yellow'),
-            ("Случайный Лес", RandomForestRegressor(n_estimators=50), 'cyan'),
-            ("Дерево", DecisionTreeRegressor(), 'magenta')
-        ]
+            y = df_work[col_eng].values
+            X = np.arange(len(y)).reshape(-1, 1)
+            xf = np.arange(len(y), len(y) + n).reshape(-1, 1)
 
-        for name, m, c in models:
-            m.fit(X, y)
-            r2 = r2_score(y, m.predict(X))
-            self.log_box.append(f" • {name}: R² = {r2:.2f}")
-            self.ax.plot(xf, m.predict(xf), '--', color=c, label=name)
+            # --- БЕЗОПАСНАЯ РАБОТА С ДАТАМИ ---
+            has_dates = self.proc.date_col is not None
 
-        self.ax.legend();
-        self.canvas.draw()
+            if has_dates:
+                # Берем колонку дат как Series для удобства
+                dates_hist = pd.to_datetime(df_work[self.proc.date_col])
+                last_date = dates_hist.iloc[-1]
 
+                # Пытаемся определить шаг (частоту) вручную, чтобы не упасть
+                if len(dates_hist) > 1:
+                    diff = dates_hist.iloc[-1] - dates_hist.iloc[-2]
+                else:
+                    diff = pd.Timedelta(days=30)
+
+                # Генерируем будущие даты
+                future_dates = [last_date + (i + 1) * diff for i in range(n)]
+                plot_x_hist = dates_hist
+                plot_x_pred = future_dates
+            else:
+                plot_x_hist = np.arange(len(y))
+                plot_x_pred = np.arange(len(y), len(y) + n)
+
+            self.log_box.append(f"\n🚀 Сравнение моделей для {col_name}:")
+            self.ax.clear()
+
+            # 1. Отрисовка истории
+            self.ax.plot(plot_x_hist, y, label="История", color='white', alpha=0.6, linewidth=2)
+
+            # 2. Обучение и отрисовка 3-х моделей
+            models = [
+                ("Линейная", LinearRegression(), 'yellow'),
+                ("Случайный Лес", RandomForestRegressor(n_estimators=50), 'cyan'),
+                ("Дерево", DecisionTreeRegressor(), 'magenta')
+            ]
+
+            for name, m, c in models:
+                m.fit(X, y)
+                r2 = r2_score(y, m.predict(X))
+                self.log_box.append(f" • {name}: R² = {r2:.2f}")
+                self.ax.plot(plot_x_pred, m.predict(xf), '--', color=c, label=name, linewidth=2)
+
+            # --- БЕЗОПАСНАЯ НАСТРОЙКА ОСЕЙ ---
+            if has_dates:
+                # Устанавливаем формат даты
+                self.ax.xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m'))
+                # Вместо падения на autofmt_xdate, просто поворачиваем текст
+                plt.setp(self.ax.get_xticklabels(), rotation=30, ha='right')
+
+            self.ax.set_title(f"Прогноз: {col_name}")
+            self.ax.set_ylabel("Значение")
+            self.ax.set_xlabel("Дата / Период")
+            self.ax.legend()
+
+            # Используем tight_layout через фигуру, это безопаснее
+            self.fig.tight_layout()
+            self.canvas.draw()
+
+        except Exception as e:
+            self.log_box.append(f"❌ Критическая ошибка прогноза: {e}")
 
 if __name__ == "__main__":
     app = QApplication(sys.argv);
