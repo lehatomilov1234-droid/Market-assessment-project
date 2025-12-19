@@ -13,7 +13,7 @@ from sklearn.ensemble import RandomForestRegressor
 from sklearn.tree import DecisionTreeRegressor
 from sklearn.metrics import r2_score
 
-# Локализация колонок
+# Локализация колонок (недоделанная)
 COLUMN_RU = {
     "price_change": "Изменение цены", "total_value": "Общая стоимость",
     "destroyed_value": "Уничтожено", "mined_value": "Добыто",
@@ -66,7 +66,7 @@ class App(QMainWindow):
     def __init__(self):
         super().__init__()
         self.proc = UniversalProcessor()
-        self.setWindowTitle("EVE Online: Универсальный Аналитический Комплекс")
+        self.setWindowTitle("EVE Online: Аналитический Комплекс")
         self.resize(1400, 950)
 
         w = QWidget();
@@ -79,7 +79,7 @@ class App(QMainWindow):
 
         self.cb_cat = QComboBox()
         self.cb_col1 = QComboBox()  # Основной
-        self.cb_col2 = QComboBox()  # Для связи
+        self.cb_col2 = QComboBox()  # Для связи Пирсона
 
         self.cb_plot = QComboBox()
         self.cb_plot.addItems(
@@ -153,7 +153,7 @@ class App(QMainWindow):
             c2_eng = RU_TO_EN.get(col2_ru, col2_ru)
             ptype = self.cb_plot.currentText()
 
-            # --- УМНАЯ ФИЛЬТРАЦИЯ ---
+            # Фильтрация
             # Если есть колонка категорий и выбрано не "Все", фильтруем. Иначе берем весь DF.
             if self.proc.cat_col and cat and cat != "Все" and cat != "Все (без фильтра)":
                 df_work = self.proc.df[self.proc.df[self.proc.cat_col] == cat].copy()
@@ -272,4 +272,3 @@ if __name__ == "__main__":
     w = App();
     w.show();
     sys.exit(app.exec())
-
