@@ -32,9 +32,13 @@ git clone https://github.com/lehatomilov1234-droid/Market-assessment-project.git
 Мы приветствуем вклад в развитие системы!
 
 Форкните репозиторий.
+
 Создайте новую ветку для вашей функции/исправления (git checkout -b feature/AmazingFeature).
+
 Внесите изменения и зафиксируйте их (git commit -m 'feat: added amazing new forecasting model').
+
 Опубликуйте ветку (git push origin feature/AmazingFeature).
+
 Создайте Pull Request (PR) к ветке main с подробным описанием изменений.
 
 # 6. Информация об авторских правах и лицензировании
