@@ -164,28 +164,51 @@ class App(QMainWindow):
         ptype = self.cb_plot.currentText()
         d1 = self.proc.working_df[RU_TO_EN.get(col1, col1)]
 
+        # --- ГИСТОГРАММА + ПЛОТНОСТЬ ---
         if ptype == "Гистограмма + Плотность":
-            self.ax.hist(d1, bins=25, alpha=0.5, color='lime', density=True)
-            kde = stats.gaussian_kde(d1);
+            # Рисуем гистограмму
+            self.ax.hist(d1, bins=25, alpha=0.5, color='lime', density=True, label='Распределение (Гистограмма)')
+
+            # Рисуем линию плотности
+            kde = stats.gaussian_kde(d1)
             x = np.linspace(d1.min(), d1.max(), 100)
-            self.ax.plot(x, kde(x), color='white', linewidth=2)
+            self.ax.plot(x, kde(x), color='white', linewidth=2, label='Кривая плотности (KDE)')
 
-        elif ptype == "Box Plot (IQR)":
-            self.ax.boxplot(d1, vert=False, patch_artist=True, boxprops=dict(facecolor='cyan'))
-
-        elif ptype == "Box Plot (Среднее/СКО)":
-            m, sd = s["Среднее"], s["СКО"]
-            self.ax.barh(1, 2 * sd, left=m - sd, height=0.3, color='magenta', alpha=0.4, label='±1 СКО')
-            self.ax.vlines(m, 0.7, 1.3, colors='yellow', linewidth=3, label='Среднее')
-            self.ax.set_yticks([]);
+            # Добавляем информативные надписи (ОБНОВЛЕНО)
+            self.ax.set_title(f"Анализ распределения: {col1}", fontsize=12, pad=15)
+            self.ax.set_xlabel(f"Значение показателя ({col1})", fontsize=10)
+            self.ax.set_ylabel("Плотность вероятности", fontsize=10)
+            self.ax.grid(True, linestyle='--', alpha=0.3)  # Сетка для удобства
             self.ax.legend()
 
+        # --- BOX PLOT IQR ---
+        elif ptype == "Box Plot (IQR)":
+            self.ax.boxplot(d1, vert=False, patch_artist=True, boxprops=dict(facecolor='cyan', alpha=0.6))
+            self.ax.set_title(f"Диаграмма размаха (Медиана/IQR): {col1}")
+            self.ax.set_xlabel("Значение")
+            self.ax.set_yticks([])  # Убираем лишние деления по Y
+
+        # --- BOX PLOT MEAN/SD ---
+        elif ptype == "Box Plot (Среднее/СКО)":
+            m, sd = s["Среднее"], s["СКО"]
+            self.ax.barh(1, 2 * sd, left=m - sd, height=0.3, color='magenta', alpha=0.4,
+                         label='Граница ±1 СКО (68% данных)')
+            self.ax.vlines(m, 0.7, 1.3, colors='yellow', linewidth=3, label=f'Среднее: {m:.2f}')
+            self.ax.hlines(1, d1.min(), d1.max(), colors='white', alpha=0.5, label='Минимум/Максимум')
+            self.ax.set_title(f"Разброс данных (Среднее и СКО): {col1}")
+            self.ax.set_xlabel("Значение")
+            self.ax.set_yticks([])
+            self.ax.legend()
+
+        # --- SCATTER PLOT ---
         elif ptype == "Scatter Plot (Корреляция)":
             d2 = self.proc.working_df[RU_TO_EN.get(col2, col2)]
             r = d1.corr(d2)
-            self.ax.scatter(d1, d2, alpha=0.6, color='orange')
-            self.ax.set_xlabel(col1);
+            self.ax.scatter(d1, d2, alpha=0.6, color='orange', edgecolors='white')
+            self.ax.set_title(f"Связь показателей (R = {r:.4f})")
+            self.ax.set_xlabel(col1)
             self.ax.set_ylabel(col2)
+            self.ax.grid(True, linestyle=':', alpha=0.4)
             self.log_box.append(f"\n🔗 Корреляция Пирсона: {r:.4f}")
 
         self.canvas.draw()
