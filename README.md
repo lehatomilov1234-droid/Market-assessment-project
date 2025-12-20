@@ -34,11 +34,11 @@
 # Информация об авторах
 Авторы: 
 
-<a href="https://github.com/lehatomilov1234-droid"><img src="https://avatars.githubusercontent.com/u/245590161?v=4" title="Leha" width="50" height="50"></a>
-<a href="https://github.com/InvokerDarkOverlord"><img src="https://avatars.githubusercontent.com/u/122711429?s=64&v=4" title="Misha" width="50" height="50"></a>
+<a href="https://github.com/lehatomilov1234-droid"><img src="https://avatars.githubusercontent.com/u/245590161?v=4" title="Alexsey" width="50" height="50"></a>
+<a href="https://github.com/InvokerDarkOverlord"><img src="https://avatars.githubusercontent.com/u/122711429?s=64&v=4" title="Mihail" width="50" height="50"></a>
 
 Группа: 24-ВТм. КГТУ "ИЦТ".
 
 # Лицензия
-Авторские права (c) 2025-настоящее время `EVE Online resource price forecasting system` — это бесплатное программное обеспечение с открытым исходным кодом, распространяемое по лицензии [MIT License](https://github.com/gofiber/fiber/blob/main/LICENSE).
+Авторские права (c) 2025-настоящее время `EVE Online resource price forecasting system` — это бесплатное программное обеспечение с открытым исходным кодом, распространяемое по лицензии [MIT License](https://github.com/lehatomilov1234-droid/Market-assessment-project/blob/main/LICENSE.txt).
 
